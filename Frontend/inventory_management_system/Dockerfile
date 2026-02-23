@@ -1,22 +1,32 @@
-# Use Node.js LTS version
-FROM node:18
+# -------- Stage 1: Build --------
+FROM node:18 AS build
 
-# Set working directory
 WORKDIR /app
 
-# Copy package files and install dependencies
+# Copy package files
 COPY package*.json ./
 
+# Install dependencies
 RUN npm install
 
-# Copy all frontend files
-COPY frontend .
+# Copy source code
+COPY . .
 
-# Build frontend for production
+# Build for production
 RUN npm run build
 
-# Serve with a lightweight server
+
+# -------- Stage 2: Production --------
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Install lightweight static server
 RUN npm install -g serve
 
+# Copy build files from previous stage
+COPY --from=build /app/build ./build
+
 EXPOSE 3000
+
 CMD ["serve", "-s", "build", "-l", "3000"]
